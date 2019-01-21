@@ -1,0 +1,23 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@io_bazel_skydoc//stardoc:stardoc.bzl", "stardoc")
+
+# This rule is unfortunately not yet functional as dependencies
+# can't yet be correctly imported.
+stardoc(
+    name = "docs",
+    input = "gomockery.bzl",
+    out = "gomockery.md",
+    deps = [
+        ":external_deps",
+    ],
+)
+
+bzl_library(
+    name = "external_deps",
+    srcs = [
+        "@io_bazel_rules_go//go:all_rules",
+        "@io_bazel_rules_go//go/private:all_rules",
+        "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+        "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+    ],
+)
