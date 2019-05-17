@@ -168,7 +168,7 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
 # language: no regular expressions and no 'while' loops.
 def _interface_to_case(name, case):
     if case != "underscore":
-        return name
+        return name + "mock"
 
     transformed = ""
     idx = -1
@@ -200,9 +200,9 @@ def _interface_to_case(name, case):
                 state = 0
         else:
             fail("reached an unexpected parsing state")
-    
+
     if curr_word_start > 0:
         transformed += "_"
     transformed += name[curr_word_start:].lower()
 
-    return transformed
+    return transformed + "_mock"
