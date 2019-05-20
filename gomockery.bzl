@@ -1,5 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_context", "go_path", "go_rule")
 load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoSource")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 _MOCKERY_TOOL = "@com_github_vektra_mockery//cmd/mockery:mockery"
 _TESTIFY_MOCK_LIB = "@com_github_stretchr_testify//mock:go_default_library"
@@ -36,7 +37,8 @@ def go_mockery_without_library(src, interfaces, visibility, **kwargs):
     interfaces = [ ifce.strip() for ifce in interfaces ]
 
     case = kwargs.get("case", "underscore")
-    genfiles = [ _interface_to_case(ifce, case) + ".go" for ifce in interfaces ]
+    outpkg = kwargs.get("outpkg", "mocks")
+    genfiles = [ paths.join(outpkg, _interface_to_case(ifce, case) + ".go") for ifce in interfaces ]
 
     go_path(
         name = _MOCKS_GOPATH_LABEL,
@@ -49,7 +51,7 @@ def go_mockery_without_library(src, interfaces, visibility, **kwargs):
         src = src,
         interfaces = interfaces,
         case = case,
-        outpkg = kwargs.get("outpkg", "mocks"),
+        outpkg = outpkg,
         outputs = genfiles,
         gopath_dep = _MOCKS_GOPATH_LABEL,
         mockery_tool = kwargs.get("mockery_tool", _MOCKERY_TOOL),
@@ -150,7 +152,7 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
            export $(cut -d= -f1 go_env.txt) &&
            export PATH=$GOROOT/bin:$PWD/{godir}:$PATH &&
            export GOPATH={gopath} &&
-           {cmd} {args} >/dev/null 2>&1 &&
+           {cmd} {args} &&
            sed -E -i.bak -e 's@"[^"]+{godep}/src/([^"]+)/"@"\\1"@g' {outfiles}
         """.format(
             godep = ctx.attr.gopath_dep[GoPath].gopath,
@@ -168,7 +170,7 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
 # language: no regular expressions and no 'while' loops.
 def _interface_to_case(name, case):
     if case != "underscore":
-        return name + "mock"
+        return name
 
     transformed = ""
     idx = -1
@@ -205,4 +207,4 @@ def _interface_to_case(name, case):
         transformed += "_"
     transformed += name[curr_word_start:].lower()
 
-    return transformed + "_mock"
+    return transformed
