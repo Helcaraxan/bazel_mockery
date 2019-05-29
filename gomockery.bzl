@@ -152,6 +152,12 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
            export $(cut -d= -f1 go_env.txt) &&
            export PATH=$GOROOT/bin:$PWD/{godir}:$PATH &&
            export GOPATH={gopath} &&
+           export GOPACKAGESPRINTGOLISTERRORS=true &&
+           # TODO(zplin): Hack required to enable the default go/packages driver.
+           # This may or not may not be necessary with Go 1.12.
+           # For details, see https://github.com/golang/go/issues/30355.
+           mkdir -p bazel-out/_tmp/go-cache &&
+           export GOCACHE=$PWD/bazel-out/_tmp/go-cache &&
            {cmd} {args} &&
            sed -E -i.bak -e 's@"[^"]+{godep}/src/([^"]+)/"@"\\1"@g' {outfiles}
         """.format(
