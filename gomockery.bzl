@@ -17,7 +17,7 @@ def go_mockery(src, importpath, interfaces, visibility, **kwargs):
         src = src,
         interfaces = interfaces,
         case = kwargs.get("case", "underscore"),
-        outpkg = kwargs.get("outpkg", None),
+        outpkg = kwargs.get("outpkg", importpath.split("/")[-1]),
         mockery_tool = kwargs.get("mockery_tool", None),
         visibility = visibility,
     )
