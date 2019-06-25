@@ -1,5 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_context", "go_path", "go_rule")
 load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoSource")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 _MOCKERY_TOOL = "@com_github_vektra_mockery//cmd/mockery:mockery"
 _TESTIFY_MOCK_LIB = "@com_github_stretchr_testify//mock:go_default_library"
@@ -16,7 +17,7 @@ def go_mockery(src, importpath, interfaces, visibility, **kwargs):
         src = src,
         interfaces = interfaces,
         case = kwargs.get("case", "underscore"),
-        outpkg = kwargs.get("outpkg", None),
+        outpkg = kwargs.get("outpkg", importpath.split("/")[-1]),
         mockery_tool = kwargs.get("mockery_tool", None),
         visibility = visibility,
     )
@@ -36,7 +37,8 @@ def go_mockery_without_library(src, interfaces, visibility, **kwargs):
     interfaces = [ ifce.strip() for ifce in interfaces ]
 
     case = kwargs.get("case", "underscore")
-    genfiles = [ _interface_to_case(ifce, case) + ".go" for ifce in interfaces ]
+    outpkg = kwargs.get("outpkg", "mocks")
+    genfiles = [ paths.join(outpkg, _interface_to_case(ifce, case) + ".go") for ifce in interfaces ]
 
     go_path(
         name = _MOCKS_GOPATH_LABEL,
@@ -49,7 +51,7 @@ def go_mockery_without_library(src, interfaces, visibility, **kwargs):
         src = src,
         interfaces = interfaces,
         case = case,
-        outpkg = kwargs.get("outpkg", "mocks"),
+        outpkg = outpkg,
         outputs = genfiles,
         gopath_dep = _MOCKS_GOPATH_LABEL,
         mockery_tool = kwargs.get("mockery_tool", _MOCKERY_TOOL),
@@ -150,7 +152,13 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
            export $(cut -d= -f1 go_env.txt) &&
            export PATH=$GOROOT/bin:$PWD/{godir}:$PATH &&
            export GOPATH={gopath} &&
-           {cmd} {args} >/dev/null 2>&1 &&
+           export GOPACKAGESPRINTGOLISTERRORS=true &&
+           # TODO(zplin): Hack required to enable the default go/packages driver.
+           # This may or not may not be necessary with Go 1.12.
+           # For details, see https://github.com/golang/go/issues/30355.
+           mkdir -p bazel-out/_tmp/go-cache &&
+           export GOCACHE=$PWD/bazel-out/_tmp/go-cache &&
+           {cmd} {args} &&
            sed -E -i.bak -e 's@"[^"]+{godep}/src/([^"]+)/"@"\\1"@g' {outfiles}
         """.format(
             godep = ctx.attr.gopath_dep[GoPath].gopath,
@@ -200,7 +208,7 @@ def _interface_to_case(name, case):
                 state = 0
         else:
             fail("reached an unexpected parsing state")
-    
+
     if curr_word_start > 0:
         transformed += "_"
     transformed += name[curr_word_start:].lower()
