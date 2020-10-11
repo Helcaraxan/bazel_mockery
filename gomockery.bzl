@@ -11,6 +11,7 @@ _MOCKS_GOPATH_LABEL = "_mocks_gopath"
 
 def go_mockery(src, importpath, interfaces, visibility, **kwargs):
     mocks_name = kwargs.get("mocks_name", _MOCKS_DEFAULT_LABEL)
+    deps = kwargs.get("deps", [])
 
     go_mockery_without_library(
         name = mocks_name,
@@ -26,8 +27,7 @@ def go_mockery(src, importpath, interfaces, visibility, **kwargs):
         name = kwargs.get("name", _LIB_DEFAULT_LABEL),
         srcs = [mocks_name],
         importpath = importpath,
-        deps = [
-            mocks_name,
+        deps = deps + [
             kwargs.get("testify_mock_lib", _TESTIFY_MOCK_LIB),
         ],
         visibility = visibility,
@@ -134,7 +134,7 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
     go_ctx = go_context(ctx)
     gopath = "$(pwd)/" + ctx.var["BINDIR"] + "/" + ctx.attr.gopath_dep[GoPath].gopath
 
-    inputs = [cmd, go_ctx.go] + (
+    tools = [cmd, go_ctx.go] + (
         ctx.attr.gopath_dep.files.to_list() +
         go_ctx.sdk.headers + go_ctx.sdk.srcs + go_ctx.sdk.tools
     ) + extra_inputs
@@ -145,7 +145,7 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
     # generated mock files as their import header will be messed up.
     ctx.actions.run_shell(
         outputs = outputs,
-        inputs = inputs,
+        tools = tools,
         command = """
            $PWD/{godir}/go env >go_env.txt &&
            source go_env.txt &&
