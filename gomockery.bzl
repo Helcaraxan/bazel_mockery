@@ -136,7 +136,7 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
 
     inputs = [cmd, go_ctx.go] + (
         ctx.attr.gopath_dep.files.to_list() +
-        go_ctx.sdk.headers + go_ctx.sdk.srcs + go_ctx.sdk.tools
+        go_ctx.sdk.headers + go_ctx.sdk.srcs
     ) + extra_inputs
 
     # We can use the go binary from the stdlib for most of the environment
@@ -146,6 +146,7 @@ def _go_tool_run_shell_stdout(ctx, cmd, args, extra_inputs, outputs):
     ctx.actions.run_shell(
         outputs = outputs,
         inputs = inputs,
+        tools = go_ctx.sdk.tools,
         command = """
            $PWD/{godir}/go env >go_env.txt &&
            source go_env.txt &&
