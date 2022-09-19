@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_context", "go_path", "go_rule")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_context", "go_path")
 load("@io_bazel_rules_go//go/private:providers.bzl", "GoLibrary", "GoPath", "GoSource")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
@@ -83,7 +83,7 @@ def _go_mockery_impl(ctx):
         ),
     ]
 
-_go_mockery = go_rule(
+_go_mockery = rule(
     _go_mockery_impl,
     attrs = {
         "src": attr.label(
